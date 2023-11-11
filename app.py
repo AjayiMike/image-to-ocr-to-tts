@@ -1,124 +1,80 @@
-from flask import Flask, request, jsonify
+from flask import Flask, url_for, render_template, request, send_from_directory
 from gtts import gTTS
 import tempfile
-import PIL.Image
-import cv2
-from pytesseract import Output
+import os
+from PIL import Image
 import pytesseract
-import pyttsx3
+from flask_uploads import UploadSet, configure_uploads, IMAGES
+
+# Path for current location
+project_dir = os.path.dirname(os.path.abspath(__file__))
+audio_directory = os.path.join(os.getcwd(), 'audio_output')
 
 app = Flask(__name__)
 
+photos = UploadSet('photos', IMAGES)
+app.config["UPLOADED_PHOTOS_DEST"] = "images"
+configure_uploads(app, photos)
 
-'''
-def assure_path_exists(path):
-  try:
-      dir = os.path.dirname(path)
-      if not os.path.exists(dir):
-          os.makedirs(dir)
-  except:
-      print('Error has occured')
+# Class for Image to Text
+class GetText(object):
+    def __init__(self, file):
+        self.file = pytesseract.image_to_string(Image.open(project_dir + '/images/' + file))
 
-# Your OCR functionality should be implemented here
-def perform_ocr(img, config=2):
-    
-    ocr_result = ocreg(img, config=2)
-    return ocr_result
+# Class for Text to Audio
+    # Languages code:['en', 'fr', 'zh-CN', 'zh-TW', 'pt', 'es']
+    # Top-level domain: []
+class GetAudio(object):
+    def __init__(self, text, lang = "en", tld='com.au'):
+        # Create a subdirectory named 'audio_output' (if it does not exist yet) in the current working directory
+        audio_directory = os.path.join(os.getcwd(), 'audio_output')
+        os.makedirs(audio_directory, exist_ok=True)
 
-def speak_t(text):
-    t = speak_text(text)
-    return t
+        # create a temp audio file with random name
+        self.file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False, dir=audio_directory)
+        self.file_name = self.file.name
+        # generate the audio
+        tts = gTTS(text=text, lang=lang, tld=tld) 
+        # save the audio output into the audio file created up here
+        tts.save(self.file_name)
 
-@app.route('/ocr/<str:image>/<int:config>', methods=['GET','POST'])
-def ocr_endpoint():
+
+
+# Home page
+@app.route('/', methods=['GET', 'POST'])
+def home():
     if request.method == 'POST':
-        try:
-            image1 = request.files['image1']
-            path = 'image/jpeg/'
-            assure_path_exists(path)
-            image1.save(path+image1.filename)
-            image = path+image1.filename
+        # Check if the form is empty
+        if 'photo' not in request.files:
+            return 'there is no photo in form'
+        
+        photo = request.files['photo']
+        path = os.path.join(app.config['UPLOADED_PHOTOS_DEST'], photo.filename)
 
-            if not image:
-                return jsonify({'error': 'No input'}), 400
-            
-            ocr_result = perform_ocr(image, config=2)
+        # Save the photo in the upload folder
+        photo.save(path)
+        
+        # Class instance 
+        textObject = GetText(photo.filename)
+        text_result = textObject.file
+        print(text_result)
 
-            speak = speak_t(ocr_result)
-            
-            # Generate audio from OCR result
-            audio_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
-            tts = gTTS(text=ocr_result, lang='en')
-            tts.save(audio_file.name)
-            
-            return jsonify({'ocr_result': ocr_result, 'audio_url': audio_file.name, 'rt_speak': speak})
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500'''
+        audio_result = GetAudio(text_result)
 
-# Initialize the engine
-engine = pyttsx3.init()
+        audio_file_name=os.path.basename(audio_result.file_name)
 
-"""VOICE"""
-voices = engine.getProperty('voices')       #getting details of current voice
-#engine.setProperty('voice', voices[0].id)  #changing index, changes voices. o for male
-engine.setProperty('voice', voices[1].id)   #changing index, changes voices. 1 for female
+        print(audio_file_name)
+        
+        audio_file_url = url_for('download_file', filename=audio_file_name)
+        return render_template('index.html', audio_file_url=audio_file_url)
+    return render_template('index.html')
 
 
-# Function to convert text to speech
-def speak_text(command):
-    engine.say(command)
-    engine.runAndWait()
-
-def ocreg(img, config = 2):
-    if not isinstance(img, str):
-        return ValueError("Input must be a jpg file")
-    if not isinstance(config, int):
-        return ValueError("Interger value required")
-    
-    if config == 1:
-        myconfig = r"--psm 4 --oem 3"
-    elif config == 2:
-        myconfig = r"--psm 5 --oem 3"
-    elif config == 3:
-        myconfig = r"--psm 6 --oem 3"
-    elif config == 4:
-        myconfig = r"--psm 7 --oem 3"
-    elif config == 5:
-        myconfig = r"--psm 8 --oem 3"
-    elif config == 6:
-        myconfig = r"--psm 9 --oem 3"
-    else:
-        myconfig = r"--psm 6 --oem 3"
+@app.route('/audio/<filename>')
+def download_file(filename):
+    return send_from_directory(audio_directory, filename, as_attachment=True)
 
 
-    # data = pytesseract.image_to_data(img, config=myconfig, output_type=Output.DICT)
-    data = pytesseract.image_to_string(PIL.Image.open(img), config = myconfig)
-    return data
-
-
-@app.route('/sum', methods=['POST'])
-def hello():
-        try:
-            req_j = request.get_json()
-            img = req_j["image"]
-            config = req_j["config"]
-            
-            txt = ocreg(img, config=config)
-
-            # speak = speak_text(txt)
-            
-            # Generate audio from OCR result
-            audio_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
-            
-            # Languages code:['en', 'fr', 'zh-CN', 'zh-TW', 'pt', 'es']
-            # Top-level domain: []
-            tts = gTTS(text=txt, lang='en', tld='com.au') 
-            tts.save(audio_file.name)
-            
-            return {"result": txt, 
-                    "audio_url":audio_file.name,}
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port= 50100, debug=True)
+    app.run(host='0.0.0.0', port= 8000, debug=True)
