@@ -4,3 +4,4 @@ gtts
 pytesseract
 pyttsx3
 Flask-Uploads
+flask-socketio
