@@ -3,3 +3,4 @@ opencv-python
 gtts
 pytesseract
 pyttsx3
+Flask-Uploads
