@@ -3,5 +3,5 @@ opencv-python
 gtts
 pytesseract
 pyttsx3
-Flask-Uploads
+Flask-Reuploaded
 flask-socketio
