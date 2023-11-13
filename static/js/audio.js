@@ -18,6 +18,29 @@ if (audio_file_url) {
     });
 }
 
+function initializeAudioPlayer(audio_file_url) {
+    if (audio_file_url) {
+        Amplitude.init({
+            bindings: {
+                37: "prev",
+                39: "next",
+                32: "play_pause",
+            },
+            songs: [
+                {
+                    name: "Risin' High (feat Raashan Ahmad)",
+                    artist: "Ancient Astronauts",
+                    album: "We Are to Answer",
+                    url: audio_file_url,
+                    cover_art_url:
+                        "https://521dimensions.com/img/open-source/amplitudejs/album-art/we-are-to-answer.jpg",
+                },
+            ],
+        });
+    }
+
+}
+
 window.onkeydown = function (e) {
     return !(e.keyCode == 32);
 };
