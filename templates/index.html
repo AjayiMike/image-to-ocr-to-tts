@@ -317,6 +317,22 @@
                 div#play-pause.amplitude-playing {
                 background: url("/static/icons/pause.svg") no-repeat;
             }
+            #progress-indicator {
+                animation: blink 2s ease 0s infinite normal backwards;
+            }
+            @keyframes blink {
+                0% {
+                    opacity: 1;
+                }
+            
+                50% {
+                    opacity: 0.5;
+                }
+            
+                100% {
+                    opacity: 1;
+                }
+            }
         </style>
     </head>
 
@@ -325,6 +341,7 @@
             <br /><br />
             <h1 class="mb-4 text-2xl">Upload an Image for Audio</h1>
             <form id="image" method="POST" enctype="multipart/form-data">
+                <!-- <input id="_socket_client_id" type="text" value="" hidden> -->
                 <div
                     class="w-full max-w-[600px] h-full max-h-[400px] overflow-hidden mb-4 relative"
                     id="image_preview_wrapper"
@@ -362,18 +379,32 @@
                         class="sr-only"
                     />
                 </div>
+                {% if IMAGE_TASK_ID %}
+                    {% set progress_percent = 'w-[20%]' %}
+                    {% set button_value = 'Processing ... 20%'  %}
+                {% else %}
+                    {% set progress_percent = '' %}
+                    {% set button_value = 'UPLOAD'  %}
+                {% endif %}
+                <!-- {% set progress_percent = 'w-[20%]' if IMAGE_TASK_ID else ''  %} -->
+                <!-- {% set button_value = 'Processing ... 20%' if IMAGE_TASK_ID else 'UPLOAD' %} -->
+
+                <span class="bg-blue-400 block relative">
+                    <span id="progress-indicator" class=" {{ progress_percent }} h-full bg-green-900 w-2/5 block absolute "></span>
                 <input
-                    class="block bg-blue-400 p-4 rounded-md w-full text-white"
+                    class="block bg-transparent p-4 rounded-md w-full text-white relative"
                     type="submit"
-                    value="Upload"
-                    onclick="uploadImage()"
+                    value= "{{ button_value }}"
                 />
+                </span>
+                
             </form>
 
-            {% if audio_file_url %}
-            <p>file url: {{ audio_file_url }}</p>
-            <div
-                class="w-full max-w-[600px] h-full max-h-[400px] overflow-hidden mb-4 relative"
+            <!-- {# if audio_file_url #} -->
+            <!-- <p class="audio-section hidden" id="file_url">file url: {{ audio_file_url }}</p> -->
+            <p class="audio-section hidden" id="file_url"> </p>
+            <div id="audio_player"
+                class="audio-section w-full max-w-[600px] h-full max-h-[400px] overflow-hidden mb-4 relative hidden"
             >
                 <!-- <div class="song-meta-data">
                     <span
@@ -385,7 +416,7 @@
                         class="song-artist"
                     ></span>
                 </div> -->
-
+                    
                 <div class="flex justify-between text-[#aaafb3] text-sm">
                     <span class="current-time">
                         <span class="amplitude-current-minutes"></span>:<span
@@ -421,13 +452,14 @@
                     <div class="controls-container-right-child"></div>
                 </div>
             </div>
-            {% endif %}
+            <!-- {# endif #} -->
         </div>
         <script>
+            const IMAGE_TASK_ID = "{{image_task_id}}"
             const audio_file_url = "{{audio_file_url}}";
         </script>
         <script src="/static/js/image.js"></script>
-        <script src="/static/js/audio.js"></script>
         <script src="/static/js/sock.js"></script>
+        <script src="/static/js/audio.js"></script>
     </body>
 </html>
