@@ -318,6 +318,7 @@
                 background: url("/static/icons/pause.svg") no-repeat;
             }
             #progress-indicator {
+                transition: all 1.4s;
                 animation: blink 2s ease 0s infinite normal backwards;
             }
             @keyframes blink {
@@ -326,7 +327,7 @@
                 }
             
                 50% {
-                    opacity: 0.5;
+                    opacity: 0.7;
                 }
             
                 100% {
@@ -379,28 +380,27 @@
                         class="sr-only"
                     />
                 </div>
-                {% if IMAGE_TASK_ID %}
+                {% if image_task_id %}
                     {% set progress_percent = 'w-[20%]' %}
                     {% set button_value = 'Processing ... 20%'  %}
                 {% else %}
                     {% set progress_percent = '' %}
                     {% set button_value = 'UPLOAD'  %}
                 {% endif %}
-                <!-- {% set progress_percent = 'w-[20%]' if IMAGE_TASK_ID else ''  %} -->
-                <!-- {% set button_value = 'Processing ... 20%' if IMAGE_TASK_ID else 'UPLOAD' %} -->
 
                 <span class="bg-blue-400 block relative">
-                    <span id="progress-indicator" class=" {{ progress_percent }} h-full bg-green-900 w-2/5 block absolute "></span>
-                <input
-                    class="block bg-transparent p-4 rounded-md w-full text-white relative"
-                    type="submit"
-                    value= "{{ button_value }}"
-                />
+                    <span id="progress-indicator" class=" {{ progress_percent }} h-full bg-green-900 block absolute "></span>
+                    <input
+                        id="submit-btn"
+                        class="block bg-transparent p-4 rounded-md w-full text-white relative"
+                        type="submit"
+                        value= "{{ button_value }}"
+                    />
                 </span>
                 
             </form>
 
-            <!-- {# if audio_file_url #} -->
+
             <!-- <p class="audio-section hidden" id="file_url">file url: {{ audio_file_url }}</p> -->
             <p class="audio-section hidden" id="file_url"> </p>
             <div id="audio_player"
@@ -452,7 +452,6 @@
                     <div class="controls-container-right-child"></div>
                 </div>
             </div>
-            <!-- {# endif #} -->
         </div>
         <script>
             const IMAGE_TASK_ID = "{{image_task_id}}"

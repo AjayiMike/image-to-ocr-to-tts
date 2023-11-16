@@ -36,12 +36,14 @@ def connect():
 
 @socketio.on('status')
 def status(data):
+    task_id = data.get('_task_id');
     print("[STATUS-TASKID]: ", data.get('_task_id'));
-    task_id = data['_task_id'];
-    if ( not (task_id and TaskByIdStore.get(task_id)) ):
-        emit('status', {'_task_id': task_id, 'error': 'true', 'message':'invalid task id'});
 
     image_filename = TaskByIdStore.get(task_id);
+
+    if ( not image_filename ):
+        emit('status', {'_task_id': task_id, 'error': 'true', 'message':'invalid task id'});
+        return;
 
     # Class instance 
     textObject = GetText(image_filename);
@@ -50,14 +52,20 @@ def status(data):
     print(text_result);
     emit('status', {'_task_id': task_id, 'done': 'false', 'message':text_result, 'progress': 65});
 
-    audio_result = GetAudio(text_result)
-    audio_file_name=os.path.basename(audio_result.file_name)
+    # Mimicking long running job
+    # from time import sleep
+    # sleep(8);
 
-    print(audio_file_name)
-    audio_file_url = url_for('download_file', filename=audio_file_name)
+    try:
+        audio_result = GetAudio(text_result)
+        audio_file_name=os.path.basename(audio_result.file_name)
 
-    emit('status', {'_task_id': task_id, 'error': 'false', 'message':audio_file_url , 'done': 'true'});
-    # return render_template('index.html', audio_file_url=audio_file_url)
+        print(audio_file_name)
+        audio_file_url = url_for('download_file', filename=audio_file_name)
+
+        emit('status', {'_task_id': task_id, 'error': 'false', 'message':audio_file_url , 'done': 'true'});
+    except:
+        emit('status', {'_task_id': task_id, 'error': 'true', 'message':'Error Translating Audio, Please Try Again ... ' , 'done': 'true'});
 
 
 
@@ -102,6 +110,7 @@ def home():
         task_id = random.randbytes(32).hex()
         TaskByIdStore[task_id] = photo.filename
         
+        print("[Task Created]: ", task_id);
         return render_template('index.html', image_task_id=task_id)
     return render_template('index.html')
 
