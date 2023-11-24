@@ -5,3 +5,4 @@ pytesseract
 pyttsx3
 Flask-Reuploaded
 flask-socketio
+fpdf2
