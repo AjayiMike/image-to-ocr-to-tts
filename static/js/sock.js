@@ -1,4 +1,4 @@
-
+let CURRENT_TASK_ID = 0;
 
 function getTaskId() {
     return localStorage.getItem('task_id');
@@ -22,6 +22,7 @@ if (IMAGE_TASK_ID) {
 
     // We signify server to start task processing, passing along the task id.
     socket.emit("status", { _task_id: IMAGE_TASK_ID });
+    CURRENT_TASK_ID = IMAGE_TASK_ID
 }
 
 
@@ -47,7 +48,25 @@ socket.on("status", (_task) => {
         taskCompleted(task.message);
     }
 
+    // "payload" is only provided when server returns pdf and text content.
+    // if (task.payload && _task_id === CURRENT_TASK_ID) {
+    if (task.payload) {
+
+        // Populate 'textarea' display
+        const display_area = document.getElementById('text-content');
+        display_area.textContent = task.payload.message;
+
+        // Setup and show PDF download link
+        const pdf_download_url = document.getElementById('pdf_download_url');
+        pdf_download_url.classList.remove('hidden');
+
+        // Update the link.
+        pdf_download_url.setAttribute('href', task.payload.pdf_url);
+    }
+
 })
+
+
 
 function progressUpdate(_percent_done) {
     const progress_indicator = document.getElementById('progress-indicator');
@@ -61,20 +80,25 @@ function progressUpdate(_percent_done) {
 }
 
 
+
 function taskCompleted(audio_file_url) {
+
+    const audio_section = document.getElementById('audio-section');
     const audio_player_el = document.getElementById('audio_player');
     const file_url_el = document.getElementById('file_url');
 
     // Make the audio player section visible.
-    audio_player_el.remove('hidden');
-    audio_player_el.style.display = 'block';
-    file_url_el.remove('hidden');
-    file_url_el.style.display = 'block';
+    audio_section.classList.remove('hidden');
 
+    // Set audio file download link.
+    file_url_el.setAttribute('href', audio_file_url);
     file_url_el.innerText = 'file url: ' + audio_file_url;
 
-    initializeAudioPlayer(audio_file_url);
+    // Set audio player source file.
+    audio_player_el.setAttribute('src', audio_file_url);
+    audio_player_el.parentElement.load();
 }
+
 
 
 function errorUpdate(_error_msg) {
@@ -91,3 +115,9 @@ function errorUpdate(_error_msg) {
         submit_button.setAttribute('value', 'UPLOAD')
     }, 2500);
 }
+
+
+
+/*
+Handles a click on the song played progress bar.
+*/
