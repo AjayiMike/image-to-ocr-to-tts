@@ -1,124 +1,141 @@
-from flask import Flask, request, jsonify
+from flask import Flask, url_for, render_template, request, send_from_directory
 from gtts import gTTS
 import tempfile
-import PIL.Image
-import cv2
-from pytesseract import Output
+import os
+from PIL import Image
 import pytesseract
-import pyttsx3
+from flask_uploads import UploadSet, configure_uploads, IMAGES, TEXT, DOCUMENTS
+
+import random
+from pdf import saveToPDF
+from flask_socketio import SocketIO, emit
+
 
 app = Flask(__name__)
 
 
-'''
-def assure_path_exists(path):
-  try:
-      dir = os.path.dirname(path)
-      if not os.path.exists(dir):
-          os.makedirs(dir)
-  except:
-      print('Error has occured')
+# Path for current location
+project_dir = os.path.dirname(os.path.abspath(__file__))
+audio_directory = os.path.join(os.getcwd(), 'audio_output')
+pdf_directory = os.path.join(os.getcwd(), 'audio_pdfs')
 
-# Your OCR functionality should be implemented here
-def perform_ocr(img, config=2):
-    
-    ocr_result = ocreg(img, config=2)
-    return ocr_result
 
-def speak_t(text):
-    t = speak_text(text)
-    return t
+photos = UploadSet('photos', IMAGES)
+app.config["UPLOADED_PHOTOS_DEST"] = "images"
+configure_uploads(app, photos)
 
-@app.route('/ocr/<str:image>/<int:config>', methods=['GET','POST'])
-def ocr_endpoint():
+
+
+# WebSocket Configs and handlers
+socketio = SocketIO(app, logger=True, engineio_logger=True)
+TaskByIdStore: dict[int, str] = dict();
+
+
+@socketio.on('connect')
+def connect():
+    print("connection received from client id:", request.sid);
+    return request.sid;
+
+
+@socketio.on('status')
+def status(data):
+    try:
+        task_id = data.get('_task_id');
+        print("[STATUS-TASKID]: ", data.get('_task_id'));
+
+        image_filename = TaskByIdStore.get(task_id);
+
+        if ( not image_filename ):
+            emit('status', {'_task_id': task_id, 'error': 'true', 'message':'invalid task id'});
+            return;
+
+        # Class instance 
+        textObject = GetText(image_filename);
+        text_result = textObject.file;
+
+        pdf_filename = saveToPDF(text_result)
+        pdf_file_url = url_for('download_pdf', pdf_filename=pdf_filename);
+        print("[PDF FILE URL]: ", pdf_file_url);
+
+        print(text_result);
+        emit('status', {'_task_id': task_id, 'done': 'false', 'payload': { 'message':text_result, 'pdf_url': pdf_file_url },  'progress': 65});
+
+        # Mimicking long running job
+        # from time import sleep
+        # sleep(8);
+
+        audio_result = GetAudio(text_result)
+        audio_file_name=os.path.basename(audio_result.file_name)
+
+        print(audio_file_name)
+        audio_file_url = url_for('download_file', filename=audio_file_name)
+
+        emit('status', {'_task_id': task_id, 'error': 'false', 'message':audio_file_url , 'done': 'true'});
+    except Exception as err:
+        print(err);
+        emit('status', {'_task_id': task_id, 'error': 'true', 'message':'Error Translating Audio, Please Try Again ... ' , 'done': 'true'});
+
+
+
+# Class for Image to Text
+class GetText(object):
+    def __init__(self, file):
+        self.file = pytesseract.image_to_string(Image.open(project_dir + '/images/' + file))
+
+
+# Class for Text to Audio
+    # Languages code:['en', 'fr', 'zh-CN', 'zh-TW', 'pt', 'es']
+    # Top-level domain: []
+class GetAudio(object):
+    def __init__(self, text, lang = "en", tld='com.au'):
+
+        # Create a subdirectory named 'audio_output' (if it does not exist yet) in the current working directory
+        # audio_directory = os.path.join(os.getcwd(), 'audio_output')
+        os.makedirs(audio_directory, exist_ok=True)
+
+        # create a temp audio file with random name
+        self.file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False, dir=audio_directory)
+        self.file_name = self.file.name
+
+        # generate the audio
+        tts = gTTS(text=text, lang=lang, tld=tld) 
+
+        # save the audio output into the audio file created up here
+        tts.save(self.file_name)
+
+
+
+# Home page
+@app.route('/', methods=['GET', 'POST'])
+def home():
     if request.method == 'POST':
-        try:
-            image1 = request.files['image1']
-            path = 'image/jpeg/'
-            assure_path_exists(path)
-            image1.save(path+image1.filename)
-            image = path+image1.filename
+        # Check if the form is empty
+        if 'photo' not in request.files:
+            return 'there is no photo in form'
+        
+        photo = request.files['photo']
+        path = os.path.join(app.config['UPLOADED_PHOTOS_DEST'], photo.filename)
 
-            if not image:
-                return jsonify({'error': 'No input'}), 400
-            
-            ocr_result = perform_ocr(image, config=2)
-
-            speak = speak_t(ocr_result)
-            
-            # Generate audio from OCR result
-            audio_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
-            tts = gTTS(text=ocr_result, lang='en')
-            tts.save(audio_file.name)
-            
-            return jsonify({'ocr_result': ocr_result, 'audio_url': audio_file.name, 'rt_speak': speak})
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500'''
-
-# Initialize the engine
-engine = pyttsx3.init()
-
-"""VOICE"""
-voices = engine.getProperty('voices')       #getting details of current voice
-#engine.setProperty('voice', voices[0].id)  #changing index, changes voices. o for male
-engine.setProperty('voice', voices[1].id)   #changing index, changes voices. 1 for female
+        # Save the photo in the upload folder
+        photo.save(path)
+        
+        task_id = random.randbytes(32).hex()
+        TaskByIdStore[task_id] = photo.filename
+        
+        print("[Task Created]: ", task_id);
+        return render_template('index.html', image_task_id=task_id)
+    return render_template('index.html')
 
 
-# Function to convert text to speech
-def speak_text(command):
-    engine.say(command)
-    engine.runAndWait()
-
-def ocreg(img, config = 2):
-    if not isinstance(img, str):
-        return ValueError("Input must be a jpg file")
-    if not isinstance(config, int):
-        return ValueError("Interger value required")
-    
-    if config == 1:
-        myconfig = r"--psm 4 --oem 3"
-    elif config == 2:
-        myconfig = r"--psm 5 --oem 3"
-    elif config == 3:
-        myconfig = r"--psm 6 --oem 3"
-    elif config == 4:
-        myconfig = r"--psm 7 --oem 3"
-    elif config == 5:
-        myconfig = r"--psm 8 --oem 3"
-    elif config == 6:
-        myconfig = r"--psm 9 --oem 3"
-    else:
-        myconfig = r"--psm 6 --oem 3"
+@app.route('/audio/<filename>')
+def download_file(filename):
+    return send_from_directory(audio_directory, filename, as_attachment=True);
 
 
-    # data = pytesseract.image_to_data(img, config=myconfig, output_type=Output.DICT)
-    data = pytesseract.image_to_string(PIL.Image.open(img), config = myconfig)
-    return data
+@app.route('/pdf/<pdf_filename>')
+def download_pdf(pdf_filename):
+    return send_from_directory(pdf_directory, pdf_filename, as_attachment=True);
 
-
-@app.route('/sum', methods=['POST'])
-def hello():
-        try:
-            req_j = request.get_json()
-            img = req_j["image"]
-            config = req_j["config"]
-            
-            txt = ocreg(img, config=config)
-
-            # speak = speak_text(txt)
-            
-            # Generate audio from OCR result
-            audio_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
-            
-            # Languages code:['en', 'fr', 'zh-CN', 'zh-TW', 'pt', 'es']
-            # Top-level domain: []
-            tts = gTTS(text=txt, lang='en', tld='com.au') 
-            tts.save(audio_file.name)
-            
-            return {"result": txt, 
-                    "audio_url":audio_file.name,}
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port= 50100, debug=True)
+    socketio.run(app, host='0.0.0.0', port= 8000, debug=True);
