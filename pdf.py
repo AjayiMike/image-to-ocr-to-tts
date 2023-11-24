@@ -22,7 +22,6 @@ def saveToPDF(_content = '', filename: str = ''):
 
     pdf.add_page()
     pdf.set_font('Roboto', size=16, style='B')
-    pdf.cell(text="Ajayi Micheal Adekunle", center=True)
     pdf.ln()
     pdf.ln()
     pdf.set_font('Roboto', size=12)

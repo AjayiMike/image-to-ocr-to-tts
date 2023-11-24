@@ -2,7 +2,8 @@ let image_preview_wrapper,
     image_preview,
     image_input,
     cancel_icon_wrapper,
-    cancel_icon;
+    cancel_icon,
+    submit_btn;
 const placeholder_image =
     "https://placehold.co/600x400?text=Select+an+Image+With+Text";
 
@@ -13,6 +14,7 @@ const init = () => {
     cancel_icon = document.querySelector("#cancel_icon");
     cancel_icon_wrapper = document.querySelector("#cancel_icon_wrapper");
     image_preview.setAttribute("src", placeholder_image);
+    submit_btn = document.querySelector("#submit-btn");
     console.log("Ready!");
 };
 
@@ -33,9 +35,11 @@ const readURL = (e) => {
         };
 
         reader.readAsDataURL(target.files[0]);
+        submit_btn.removeAttribute("disabled");
     } else {
         image_preview.setAttribute("src", e.target.result);
         cancel_icon_wrapper.classList.replace("block", "hidden");
+        submit_btn.setAttribute("disabled");
     }
 };
 image_preview_wrapper.addEventListener(
