@@ -1,464 +1,421 @@
 <!DOCTYPE html>
 <html lang="">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <script
-            type="text/javascript"
-            src="/static/js/amplitude.js"
-        ></script>
-        <script src="/static/js/tailwindcss-3.3.5.js"></script>
-        <script src="/static/js/socket.io.min.js"></script>
-        <script>
-            tailwind.config = {
-                theme: {
-                    extend: {
-                        colors: {
-                            // clifford: "#da373d",
-                        },
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script type="text/javascript" src="/static/js/amplitude.js"></script>
+    <script src="/static/js/tailwindcss-3.3.5.js"></script>
+    <script src="/static/js/socket.io.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // clifford: "#da373d",
                     },
                 },
-            };
-        </script>
-        <style type="text/tailwindcss">
-            @layer utilities {
+            },
+        };
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
                 .content-auto {
                     content-visibility: auto;
                 }
             }
         </style>
-        <style>
-            div#progress-container {
-                position: relative;
-                height: 20px;
-                cursor: pointer;
-            }
-            div#progress-container:hover
-                input[type="range"].amplitude-song-slider::-webkit-slider-thumb {
-                display: block;
-            }
+    <style>
+        div#progress-container {
+            position: relative;
+            height: 20px;
+            cursor: pointer;
+        }
 
+        div#progress-container:hover input[type="range"].amplitude-song-slider::-webkit-slider-thumb {
+            display: block;
+        }
+
+        div#progress-container progress#song-played-progress {
+            width: 100%;
+            position: absolute;
+            left: 0;
+            top: 8px;
+            right: 0;
+            z-index: 60;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            height: 4px;
+            border-radius: 5px;
+            background: transparent;
+            border: none;
+        }
+
+        @media all and (-ms-high-contrast: none) {
+
+            div#progress-container *::-ms-backdrop,
             div#progress-container progress#song-played-progress {
-                width: 100%;
-                position: absolute;
-                left: 0;
-                top: 8px;
-                right: 0;
-                z-index: 60;
-                -webkit-appearance: none;
-                -moz-appearance: none;
-                appearance: none;
-                height: 4px;
-                border-radius: 5px;
-                background: transparent;
+                color: #fa6733;
+                border: none;
+                background-color: #e1e1e1;
+            }
+        }
+
+        @supports (-ms-ime-align: auto) {
+            div#progress-container progress#song-played-progress {
+                color: #fa6733;
                 border: none;
             }
+        }
 
-            @media all and (-ms-high-contrast: none) {
-                div#progress-container *::-ms-backdrop,
-                div#progress-container progress#song-played-progress {
-                    color: #fa6733;
-                    border: none;
-                    background-color: #e1e1e1;
-                }
-            }
+        div#progress-container progress#song-played-progress[value]::-webkit-progress-bar {
+            background: none;
+            border-radius: 5px;
+        }
 
-            @supports (-ms-ime-align: auto) {
-                div#progress-container progress#song-played-progress {
-                    color: #fa6733;
-                    border: none;
-                }
-            }
+        div#progress-container progress#song-played-progress[value]::-webkit-progress-value {
+            background-color: #fa6733;
+            border-radius: 5px;
+        }
 
-            div#progress-container
-                progress#song-played-progress[value]::-webkit-progress-bar {
-                background: none;
-                border-radius: 5px;
-            }
+        div#progress-container progress#song-played-progress::-moz-progress-bar {
+            background: none;
+            border-radius: 5px;
+            background-color: #fa6733;
+            height: 5px;
+            margin-top: -2px;
+        }
 
-            div#progress-container
-                progress#song-played-progress[value]::-webkit-progress-value {
-                background-color: #fa6733;
-                border-radius: 5px;
-            }
-            div#progress-container
-                progress#song-played-progress::-moz-progress-bar {
-                background: none;
-                border-radius: 5px;
-                background-color: #fa6733;
-                height: 5px;
-                margin-top: -2px;
-            }
+        div#progress-container progress#song-buffered-progress {
+            position: absolute;
+            left: 0;
+            top: 8px;
+            right: 0;
+            width: 100%;
+            z-index: 10;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            height: 4px;
+            border-radius: 5px;
+            background: transparent;
+            border: none;
+            background-color: #d7dee3;
+        }
 
+        div#progress-container progress#song-buffered-progress[value]::-webkit-progress-bar {
+            background-color: #e1e1e1;
+            border-radius: 5px;
+        }
+
+        div#progress-container progress#song-buffered-progress[value]::-webkit-progress-value {
+            background-color: #e1e1e1;
+            border-radius: 5px;
+            transition: width 0.1s ease;
+        }
+
+        div#progress-container progress#song-buffered-progress::-moz-progress-bar {
+            background: none;
+            border-radius: 5px;
+            background-color: #e1e1e1;
+            height: 5px;
+            margin-top: -2px;
+        }
+
+        div#progress-container progress::-ms-fill {
+            border: none;
+        }
+
+        @-moz-document url-prefix() {
             div#progress-container progress#song-buffered-progress {
-                position: absolute;
-                left: 0;
-                top: 8px;
-                right: 0;
-                width: 100%;
-                z-index: 10;
-                -webkit-appearance: none;
-                -moz-appearance: none;
-                appearance: none;
-                height: 4px;
-                border-radius: 5px;
-                background: transparent;
-                border: none;
-                background-color: #d7dee3;
-            }
-            div#progress-container
-                progress#song-buffered-progress[value]::-webkit-progress-bar {
-                background-color: #e1e1e1;
-                border-radius: 5px;
-            }
-
-            div#progress-container
-                progress#song-buffered-progress[value]::-webkit-progress-value {
-                background-color: #e1e1e1;
-                border-radius: 5px;
-                transition: width 0.1s ease;
-            }
-            div#progress-container
-                progress#song-buffered-progress::-moz-progress-bar {
-                background: none;
-                border-radius: 5px;
-                background-color: #e1e1e1;
-                height: 5px;
-                margin-top: -2px;
-            }
-            div#progress-container progress::-ms-fill {
+                top: 9px;
                 border: none;
             }
+        }
 
-            @-moz-document url-prefix() {
-                div#progress-container progress#song-buffered-progress {
-                    top: 9px;
-                    border: none;
-                }
+        @media all and (-ms-high-contrast: none) {
+
+            div#progress-container *::-ms-backdrop,
+            div#white-player-center div.time-progress div#progress-container progress#song-buffered-progress {
+                color: #78909c;
+                border: none;
             }
-            @media all and (-ms-high-contrast: none) {
-                div#progress-container *::-ms-backdrop,
-                div#white-player-center
-                    div.time-progress
-                    div#progress-container
-                    progress#song-buffered-progress {
-                    color: #78909c;
-                    border: none;
-                }
+        }
+
+        @supports (-ms-ime-align: auto) {
+            div#progress-container progress#song-buffered-progress {
+                color: #78909c;
+                border: none;
             }
-            @supports (-ms-ime-align: auto) {
-                div#progress-container progress#song-buffered-progress {
-                    color: #78909c;
-                    border: none;
-                }
+        }
+
+        div#progress-container input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            margin: 7.5px 0;
+            position: absolute;
+            z-index: 9999;
+            top: -7px;
+            height: 20px;
+            cursor: pointer;
+            background-color: inherit;
+        }
+
+        div#progress-container input[type="range"]:focus {
+            outline: none;
+        }
+
+        div#progress-container input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 0px;
+            cursor: pointer;
+            box-shadow: 0px 0px 0px rgba(0, 0, 0, 0),
+                0px 0px 0px rgba(13, 13, 13, 0);
+            background: #fa6733;
+            border-radius: 0px;
+            border: 0px solid #010101;
+        }
+
+        div#progress-container input[type="range"]::-webkit-slider-thumb {
+            box-shadow: 0px 0px 0px #000000, 0px 0px 0px #0d0d0d;
+            border: 1px solid #fa6733;
+            height: 15px;
+            width: 15px;
+            border-radius: 16px;
+            background: #fa6733;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -7.5px;
+        }
+
+        div#progress-container input[type="range"]:focus::-webkit-slider-runnable-track {
+            background: #fa6733;
+        }
+
+        div#progress-container input[type="range"]::-moz-range-track {
+            width: 100%;
+            height: 0px;
+            cursor: pointer;
+            box-shadow: 0px 0px 0px rgba(0, 0, 0, 0),
+                0px 0px 0px rgba(13, 13, 13, 0);
+            background: #fa6733;
+            border-radius: 0px;
+            border: 0px solid #010101;
+        }
+
+        div#progress-container input[type="range"]::-moz-range-thumb {
+            box-shadow: 0px 0px 0px #000000, 0px 0px 0px #0d0d0d;
+            border: 1px solid #fa6733;
+            height: 15px;
+            width: 15px;
+            border-radius: 16px;
+            background: #fa6733;
+            cursor: pointer;
+        }
+
+        div#progress-container input[type="range"]::-ms-track {
+            width: 100%;
+            height: 0px;
+            cursor: pointer;
+            background: transparent;
+            border-color: transparent;
+            color: transparent;
+        }
+
+        div#progress-container input[type="range"]::-ms-fill-lower {
+            background: #003d57;
+            border: 0px solid #010101;
+            border-radius: 0px;
+            box-shadow: 0px 0px 0px rgba(0, 0, 0, 0),
+                0px 0px 0px rgba(13, 13, 13, 0);
+        }
+
+        div#progress-container input[type="range"]::-ms-fill-upper {
+            background: #fa6733;
+            border: 0px solid #010101;
+            border-radius: 0px;
+            box-shadow: 0px 0px 0px rgba(0, 0, 0, 0),
+                0px 0px 0px rgba(13, 13, 13, 0);
+        }
+
+        div#progress-container input[type="range"]::-ms-thumb {
+            box-shadow: 0px 0px 0px #000000, 0px 0px 0px #0d0d0d;
+            border: 1px solid #fa6733;
+            height: 15px;
+            width: 15px;
+            border-radius: 16px;
+            background: #fa6733;
+            cursor: pointer;
+            height: 0px;
+            display: none;
+        }
+
+        @media all and (-ms-high-contrast: none) {
+
+            div#progress-container *::-ms-backdrop,
+            div#progress-container input[type="range"].amplitude-song-slider {
+                padding: 0px;
             }
 
-            div#progress-container input[type="range"] {
-                -webkit-appearance: none;
-                width: 100%;
-                margin: 7.5px 0;
-                position: absolute;
-                z-index: 9999;
-                top: -7px;
-                height: 20px;
-                cursor: pointer;
-                background-color: inherit;
-            }
-            div#progress-container input[type="range"]:focus {
-                outline: none;
-            }
-
-            div#progress-container
-                input[type="range"]::-webkit-slider-runnable-track {
-                width: 100%;
-                height: 0px;
-                cursor: pointer;
-                box-shadow: 0px 0px 0px rgba(0, 0, 0, 0),
-                    0px 0px 0px rgba(13, 13, 13, 0);
-                background: #fa6733;
-                border-radius: 0px;
-                border: 0px solid #010101;
-            }
-
-            div#progress-container input[type="range"]::-webkit-slider-thumb {
-                box-shadow: 0px 0px 0px #000000, 0px 0px 0px #0d0d0d;
-                border: 1px solid #fa6733;
+            div#progress-container *::-ms-backdrop,
+            div#progress-container input[type="range"].amplitude-song-slider::-ms-thumb {
                 height: 15px;
                 width: 15px;
-                border-radius: 16px;
-                background: #fa6733;
+                border-radius: 10px;
                 cursor: pointer;
-                -webkit-appearance: none;
-                margin-top: -7.5px;
-            }
-            div#progress-container
-                input[type="range"]:focus::-webkit-slider-runnable-track {
-                background: #fa6733;
-            }
-            div#progress-container input[type="range"]::-moz-range-track {
-                width: 100%;
-                height: 0px;
-                cursor: pointer;
-                box-shadow: 0px 0px 0px rgba(0, 0, 0, 0),
-                    0px 0px 0px rgba(13, 13, 13, 0);
-                background: #fa6733;
-                border-radius: 0px;
-                border: 0px solid #010101;
+                margin-top: -8px;
             }
 
-            div#progress-container input[type="range"]::-moz-range-thumb {
-                box-shadow: 0px 0px 0px #000000, 0px 0px 0px #0d0d0d;
-                border: 1px solid #fa6733;
-                height: 15px;
-                width: 15px;
-                border-radius: 16px;
-                background: #fa6733;
-                cursor: pointer;
-            }
-            div#progress-container input[type="range"]::-ms-track {
-                width: 100%;
-                height: 0px;
-                cursor: pointer;
-                background: transparent;
+            div#progress-container *::-ms-backdrop,
+            div#progress-container input[type="range"].amplitude-song-slider::-ms-track {
+                border-width: 15px 0;
                 border-color: transparent;
-                color: transparent;
             }
 
-            div#progress-container input[type="range"]::-ms-fill-lower {
-                background: #003d57;
-                border: 0px solid #010101;
-                border-radius: 0px;
-                box-shadow: 0px 0px 0px rgba(0, 0, 0, 0),
-                    0px 0px 0px rgba(13, 13, 13, 0);
+            div#progress-container *::-ms-backdrop,
+            div#progress-container input[type="range"].amplitude-song-slider::-ms-fill-lower {
+                background: #e1e1e1;
+                border-radius: 10px;
             }
-            div#progress-container input[type="range"]::-ms-fill-upper {
-                background: #fa6733;
-                border: 0px solid #010101;
-                border-radius: 0px;
-                box-shadow: 0px 0px 0px rgba(0, 0, 0, 0),
-                    0px 0px 0px rgba(13, 13, 13, 0);
+
+            div#progress-container *::-ms-backdrop,
+            div#progress-container input[type="range"].amplitude-song-slider::-ms-fill-upper {
+                background: #e1e1e1;
+                border-radius: 10px;
             }
-            div#progress-container input[type="range"]::-ms-thumb {
-                box-shadow: 0px 0px 0px #000000, 0px 0px 0px #0d0d0d;
-                border: 1px solid #fa6733;
+        }
+
+        @supports (-ms-ime-align: auto) {
+            div#progress-container input[type="range"].amplitude-song-slider::-ms-thumb {
                 height: 15px;
                 width: 15px;
-                border-radius: 16px;
-                background: #fa6733;
-                cursor: pointer;
-                height: 0px;
-                display: none;
+                margin-top: 3px;
+            }
+        }
+
+        div#progress-container input[type="range"]:focus::-ms-fill-lower {
+            background: #fa6733;
+        }
+
+        div#progress-container input[type="range"]:focus::-ms-fill-upper {
+            background: #fa6733;
+        }
+
+        .controls-container .controls-container-left-child div#play-pause {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            vertical-align: middle;
+        }
+
+        .controls-container .controls-container-left-child div#play-pause.amplitude-paused {
+            background: url("/static/icons/play.svg") no-repeat;
+        }
+
+        .controls-container .controls-container-left-child div#play-pause.amplitude-playing {
+            background: url("/static/icons/pause.svg") no-repeat;
+        }
+
+        #progress-indicator {
+            transition: all 1.4s;
+            animation: blink 2s ease 0s infinite normal backwards;
+        }
+
+        @keyframes blink {
+            0% {
+                opacity: 1;
             }
 
-            @media all and (-ms-high-contrast: none) {
-                div#progress-container *::-ms-backdrop,
-                div#progress-container
-                    input[type="range"].amplitude-song-slider {
-                    padding: 0px;
-                }
-                div#progress-container *::-ms-backdrop,
-                div#progress-container
-                    input[type="range"].amplitude-song-slider::-ms-thumb {
-                    height: 15px;
-                    width: 15px;
-                    border-radius: 10px;
-                    cursor: pointer;
-                    margin-top: -8px;
-                }
-                div#progress-container *::-ms-backdrop,
-                div#progress-container
-                    input[type="range"].amplitude-song-slider::-ms-track {
-                    border-width: 15px 0;
-                    border-color: transparent;
-                }
-                div#progress-container *::-ms-backdrop,
-                div#progress-container
-                    input[type="range"].amplitude-song-slider::-ms-fill-lower {
-                    background: #e1e1e1;
-                    border-radius: 10px;
-                }
-                div#progress-container *::-ms-backdrop,
-                div#progress-container
-                    input[type="range"].amplitude-song-slider::-ms-fill-upper {
-                    background: #e1e1e1;
-                    border-radius: 10px;
-                }
+            50% {
+                opacity: 0.7;
             }
 
-            @supports (-ms-ime-align: auto) {
-                div#progress-container
-                    input[type="range"].amplitude-song-slider::-ms-thumb {
-                    height: 15px;
-                    width: 15px;
-                    margin-top: 3px;
-                }
+            100% {
+                opacity: 1;
             }
-            div#progress-container input[type="range"]:focus::-ms-fill-lower {
-                background: #fa6733;
-            }
-            div#progress-container input[type="range"]:focus::-ms-fill-upper {
-                background: #fa6733;
-            }
+        }
+    </style>
+</head>
 
-            .controls-container .controls-container-left-child div#play-pause {
-                display: inline-block;
-                width: 24px;
-                height: 24px;
-                cursor: pointer;
-                vertical-align: middle;
-            }
-            .controls-container
-                .controls-container-left-child
-                div#play-pause.amplitude-paused {
-                background: url("/static/icons/play.svg") no-repeat;
-            }
-            .controls-container
-                .controls-container-left-child
-                div#play-pause.amplitude-playing {
-                background: url("/static/icons/pause.svg") no-repeat;
-            }
-            #progress-indicator {
-                transition: all 1.4s;
-                animation: blink 2s ease 0s infinite normal backwards;
-            }
-            @keyframes blink {
-                0% {
-                    opacity: 1;
-                }
-            
-                50% {
-                    opacity: 0.7;
-                }
-            
-                100% {
-                    opacity: 1;
-                }
-            }
-        </style>
-    </head>
-
-    <body>
-        <div class="lg:content-auto flex flex-col items-center px-4">
-            <br /><br />
-            <h1 class="mb-4 text-2xl">Upload an Image for Audio</h1>
-            <form id="image" method="POST" enctype="multipart/form-data">
-                <!-- <input id="_socket_client_id" type="text" value="" hidden> -->
-                <div
-                    class="w-full max-w-[600px] h-full max-h-[400px] overflow-hidden mb-4 relative"
-                    id="image_preview_wrapper"
-                >
-                    <img
-                        src="#"
-                        alt="your image"
-                        id="image_preview"
-                        class="w-full h-full"
-                    />
-                    <div
-                        class="w-full h-full absolute top-0 left-0 right-0 bottom-0 bg-gray-900 opacity-60 hidden"
-                        id="cancel_icon_wrapper"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            x="0px"
-                            y="0px"
-                            width="100"
-                            height="100"
-                            viewBox="0 0 50 50"
-                            id="cancel_icon"
-                            class="absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]"
-                        >
-                            <path
-                                d="M 7.7070312 6.2929688 L 6.2929688 7.7070312 L 23.585938 25 L 6.2929688 42.292969 L 7.7070312 43.707031 L 25 26.414062 L 42.292969 43.707031 L 43.707031 42.292969 L 26.414062 25 L 43.707031 7.7070312 L 42.292969 6.2929688 L 25 23.585938 L 7.7070312 6.2929688 z"
-                            ></path>
-                        </svg>
-                    </div>
-                    <input
-                        type="file"
-                        name="photo"
-                        accept="image/*"
-                        id="image_input"
-                        class="sr-only"
-                    />
+<body style="display: flex; flex-direction: row;">
+    <div class="lg:content-auto flex flex-col items-center px-4">
+        <h1 class="mb-4 text-2xl">Upload an Image for Audio</h1>
+        <form id="image" method="POST" enctype="multipart/form-data">
+            <!-- <input id="_socket_client_id" type="text" value="" hidden> -->
+            <div class="w-full max-w-[600px] h-full max-h-[400px] overflow-hidden mb-4 relative"
+                id="image_preview_wrapper">
+                <img src="/static/icons/placeholder.svg" alt="your image" id="image_preview" class="w-full h-full" />
+                <div class="w-full h-full absolute top-0 left-0 right-0 bottom-0 bg-gray-900 opacity-60 hidden"
+                    id="cancel_icon_wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100" height="100" viewBox="0 0 50 50"
+                        id="cancel_icon" class="absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]">
+                        <path
+                            d="M 7.7070312 6.2929688 L 6.2929688 7.7070312 L 23.585938 25 L 6.2929688 42.292969 L 7.7070312 43.707031 L 25 26.414062 L 42.292969 43.707031 L 43.707031 42.292969 L 26.414062 25 L 43.707031 7.7070312 L 42.292969 6.2929688 L 25 23.585938 L 7.7070312 6.2929688 z">
+                        </path>
+                    </svg>
                 </div>
-                {% if image_task_id %}
-                    {% set progress_percent = 'w-[20%]' %}
-                    {% set button_value = 'Processing ... 20%'  %}
-                {% else %}
-                    {% set progress_percent = '' %}
-                    {% set button_value = 'UPLOAD'  %}
-                {% endif %}
-
-                <span class="bg-blue-400 block relative">
-                    <span id="progress-indicator" class=" {{ progress_percent }} h-full bg-green-900 block absolute "></span>
-                    <input
-                        id="submit-btn"
-                        class="block bg-transparent p-4 rounded-md w-full text-white relative"
-                        type="submit"
-                        value= "{{ button_value }}"
-                    />
-                </span>
-                
-            </form>
-
-
-            <!-- <p class="audio-section hidden" id="file_url">file url: {{ audio_file_url }}</p> -->
-            <p class="audio-section hidden" id="file_url"> </p>
-            <div id="audio_player"
-                class="audio-section w-full max-w-[600px] h-full max-h-[400px] overflow-hidden mb-4 relative hidden"
-            >
-                <!-- <div class="song-meta-data">
-                    <span
-                        data-amplitude-song-info="name"
-                        class="song-name"
-                    ></span>
-                    <span
-                        data-amplitude-song-info="artist"
-                        class="song-artist"
-                    ></span>
-                </div> -->
-                    
-                <div class="flex justify-between text-[#aaafb3] text-sm">
-                    <span class="current-time">
-                        <span class="amplitude-current-minutes"></span>:<span
-                            class="amplitude-current-seconds"
-                        ></span>
-                    </span>
-                    <span class="duration">
-                        <span class="amplitude-duration-minutes"></span>:<span
-                            class="amplitude-duration-seconds"
-                        ></span>
-                    </span>
-                </div>
-
-                <div class="time-progress">
-                    <div id="progress-container">
-                        <input type="range" class="amplitude-song-slider" />
-                        <progress
-                            id="song-played-progress"
-                            class="amplitude-song-played-progress"
-                        ></progress>
-                        <progress
-                            id="song-buffered-progress"
-                            class="amplitude-buffered-progress"
-                            value="0"
-                        ></progress>
-                    </div>
-                </div>
-
-                <div class="controls-container">
-                    <div class="controls-container-left-child">
-                        <div class="amplitude-play-pause" id="play-pause"></div>
-                    </div>
-                    <div class="controls-container-right-child"></div>
-                </div>
+                <input type="file" name="photo" accept="image/*" id="image_input" class="sr-only" />
             </div>
+
+
+            {% if image_task_id %}
+            {% set progress_percent = 'w-[20%]' %}
+            {% set button_value = 'Processing ... 20%' %}
+            {% else %}
+            {% set progress_percent = '' %}
+            {% set button_value = 'UPLOAD' %}
+            {% endif %}
+
+            <span class="bg-blue-400 block relative">
+                <span id="progress-indicator"
+                    class=" {{ progress_percent }} h-full bg-green-900 block absolute "></span>
+                <input id="submit-btn" class="block bg-transparent p-4 rounded-md w-full text-white relative"
+                    type="submit" value="{{ button_value }}" />
+            </span>
+
+        </form>
+
+        <br />
+        <br />
+
+        <div id="audio-section" class="w-full hidden">
+            <a class="audio-section" id="file_url" download> </a>
+            <audio controls class="w-full">
+                <source id="audio_player" src="" type="audio/ogg">
+                Your browser does not support the audio tag.
+            </audio>
         </div>
-        <script>
-            const IMAGE_TASK_ID = "{{image_task_id}}"
-            const audio_file_url = "{{audio_file_url}}";
-        </script>
-        <script src="/static/js/image.js"></script>
-        <script src="/static/js/sock.js"></script>
-        <script src="/static/js/audio.js"></script>
-    </body>
+
+    </div>
+
+
+    <!-- SECOND SECTION STARTS BELOW -->
+
+
+    <div class="flex-1">
+        <div class="mb-4 text-2xl flex justify-between">
+            <h2 class="">TEXT CONTENT</h2>
+            <a id="pdf_download_url" class=" italic bold text-blue-400 hidden" href="" download="extracted-audio"> (
+                Download as PDF ) </a>
+        </div>
+        <textarea id="text-content"
+            class="w-full h-full rounded-xl border-4 border-blue-400 placeholder:italic focus-visible:ring focus-visible:ring-transparent"
+            name="" id="" cols="40" rows="10" readonly placeholder="Your Image Text Content Appears Here">
+        </textarea>
+    </div>
+
+
+
+    <script>
+        const IMAGE_TASK_ID = "{{image_task_id}}";
+        const audio_file_url = "{{audio_file_url}}";
+    </script>
+
+    <script src="/static/js/audio.js"></script>
+    <script src="/static/js/image.js"></script>
+    <script src="/static/js/sock.js"></script>
+</body>
+
 </html>
