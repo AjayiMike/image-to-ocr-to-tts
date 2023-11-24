@@ -1,13 +1,16 @@
 
-from os import path, getcwd
+from os import path, getcwd, makedirs
 from random import randbytes
 from fpdf import FPDF
 
 
+pdf_directory = path.join(getcwd(), 'audio_pdfs')
 
 def saveToPDF(_content = '', filename: str = ''):
+
+    # Create a subdirectory named 'audio_pdfs' (if it does not exist yet) in the current working directory.
+    makedirs(pdf_directory, exist_ok=True)
     
-    pdf_directory = path.join(getcwd(), 'audio_pdfs')
     filename = ( randbytes(8).hex() if filename == '' else filename ) + ".pdf"
     filepath = path.join(pdf_directory, filename)
 
