@@ -11,3 +11,4 @@ venv/
 .env
 audio_output
 images
+/audio_pdfs
