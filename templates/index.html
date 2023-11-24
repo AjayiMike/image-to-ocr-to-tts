@@ -365,7 +365,7 @@
         <div
             class="container mx-auto flex gap-4 flex-col lg:flex-row justify-center p-4"
         >
-            <div class="lg:content-auto flex flex-col">
+            <div class="content-auto">
                 <h1 class="mb-4 text-2xl">Upload an Image for Audio</h1>
                 <form id="image" method="POST" enctype="multipart/form-data">
                     <div
@@ -376,7 +376,7 @@
                             src="/static/icons/placeholder.svg"
                             alt="your image"
                             id="image_preview"
-                            class="w-full h-full cursor-pointer"
+                            class="w-full h-full cursor-pointer object-fill"
                         />
                         <div
                             class="w-full h-full absolute top-0 left-0 right-0 bottom-0 bg-gray-900 opacity-60 hidden"
@@ -449,7 +449,7 @@
                 </div>
             </div>
             <!-- SECOND SECTION STARTS BELOW -->
-            <div class="h-full w-full hidden" id="text-content-wrapper">
+            <div class="h-full hidden" id="text-content-wrapper">
                 <div class="mb-4 flex justify-between items-center">
                     <h2>Extracted text</h2>
                     <a
