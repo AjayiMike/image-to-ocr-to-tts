@@ -73,7 +73,7 @@ def status(data):
         emit('status', {'_task_id': task_id, 'error': 'false', 'message':audio_file_url , 'done': 'true'});
     except Exception as err:
         print(err);
-        emit('status', {'_task_id': task_id, 'error': 'true', 'message':'Error Translating Audio, Please Try Again ... ' , 'done': 'true'});
+        emit('status', {'_task_id': task_id, 'error': 'true', 'message':'An Error occured, Please Try Again ... ' , 'done': 'true'});
 
 
 
